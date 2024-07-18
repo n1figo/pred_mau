@@ -5,13 +5,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import cv2
 from PIL import Image
-import io
-from google.cloud import vision
-import os
-
-# Google Cloud 자격 증명 설정
-# 주의: 실제 배포 시 이 부분은 보안을 위해 환경 변수로 관리해야 합니다.
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'path/to/your/service-account-key.json'
+import pytesseract
 
 # 데이터 로드 함수
 def load_data():
@@ -19,22 +13,16 @@ def load_data():
 
 # 이미지에서 텍스트 추출 함수
 def extract_text_from_image(image):
-    # Vision 클라이언트 초기화
-    client = vision.ImageAnnotatorClient()
-
-    # 이미지를 바이트로 변환
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='PNG')
-    content = img_byte_arr.getvalue()
-
-    # Vision API로 텍스트 감지 요청
-    image = vision.Image(content=content)
-    response = client.text_detection(image=image)
-    texts = response.text_annotations
-
-    if texts:
-        return texts[0].description
-    return "텍스트를 추출할 수 없습니다."
+    # PIL Image를 numpy 배열로 변환
+    img_array = np.array(image)
+    
+    # 이미지를 그레이스케일로 변환
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    
+    # Tesseract를 사용하여 텍스트 추출
+    text = pytesseract.image_to_string(gray)
+    
+    return text
 
 # 이미지 회전 함수
 def rotate_image(image, angle):
