@@ -1,71 +1,82 @@
+import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
 from datetime import datetime, timedelta
-import streamlit as st
+import cv2
+import pytesseract
+from PIL import Image
+import io
 
+# 데이터 로드 함수
 def load_data():
-    # 실제로는 데이터베이스나 파일에서 로드해야 합니다.
-    # 여기서는 예시 데이터를 사용합니다.
-    data = {
-        'date': pd.date_range(start='2024-06-01', end='2024-06-30'),
-        'login_customers': np.cumsum(np.random.randint(1000, 5000, 30)),
-        'unique_visitors': np.cumsum(np.random.randint(500, 2000, 30)),
-        'MAU': np.cumsum(np.random.randint(1500, 7000, 30))
-    }
-    return pd.DataFrame(data)
+    return pd.read_excel('data/mau_data.xlsx')
 
-def predict_mau(current_date, login_customers, login_customers_mom, 
-                unique_visitors, unique_visitors_mom, 
-                mau, mau_mom, prev_month_data):
+# 이미지에서 텍스트 추출 함수
+def extract_text_from_image(image):
+    # OpenCV를 사용하여 이미지 처리
+    img_array = np.array(image)
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
     
-    # 남은 날짜 계산
-    month_end = pd.Timestamp(current_date).to_period('M').to_timestamp('M')
-    remaining_days = (month_end - pd.Timestamp(current_date)).days + 1
-    
-    # 남은 평일/주말 수 계산
-    remaining_weekdays = np.busday_count(current_date, month_end.date()) + 1
-    remaining_weekends = remaining_days - remaining_weekdays
-    
-    # 전월 동일 기간 평균 계산
-    prev_month_same_period = prev_month_data[prev_month_data['date'].dt.day >= current_date.day]
-    prev_weekday_avg = prev_month_same_period[prev_month_same_period['date'].dt.dayofweek < 5]['MAU'].diff().mean()
-    prev_weekend_avg = prev_month_same_period[prev_month_same_period['date'].dt.dayofweek >= 5]['MAU'].diff().mean()
-    
-    # 현재 추세에 따른 배수 계산
-    if mau_mom > 1:
-        multiplier = 1.1  # 성장 중이면 10% 증가
-    else:
-        multiplier = 0.9  # 감소 중이면 10% 감소
-    
-    # 예상 증가량 계산
-    expected_increase = (prev_weekday_avg * remaining_weekdays + prev_weekend_avg * remaining_weekends) * multiplier
-    
-    # 최종 MAU 예측
-    predicted_mau = mau + expected_increase
-    
-    return predicted_mau
+    # pytesseract를 사용하여 텍스트 추출
+    text = pytesseract.image_to_string(gray)
+    return text
 
-# Streamlit 앱
-st.title('MAU 예측 대시보드')
+# 추출된 텍스트에서 MAU 데이터 파싱 함수
+def parse_mau_data(text):
+    # 여기에 텍스트 파싱 로직을 구현합니다.
+    # 예시: 정규표현식을 사용하여 날짜와 MAU 값을 추출
+    # 실제 구현은 이미지 형식에 따라 달라질 수 있습니다.
+    pass
 
-# 사용자 입력
-current_date = st.date_input('현재 날짜', datetime.now())
-login_customers = st.number_input('로그인 고객수 (누적)', min_value=0)
-login_customers_mom = st.number_input('로그인 고객수 전월비', min_value=0.0)
-unique_visitors = st.number_input('방문자 고유 ID (누적)', min_value=0)
-unique_visitors_mom = st.number_input('방문자 고유 ID 전월비', min_value=0.0)
-mau = st.number_input('MAU (누적)', min_value=0)
-mau_mom = st.number_input('MAU 전월비', min_value=0.0)
+# 페이지 설정
+st.set_page_config(page_title="MAU 예측 대시보드", layout="wide")
+
+# 제목
+st.title("MAU 예측 대시보드")
 
 # 데이터 로드
-prev_month_data = load_data()
+df = load_data()
 
-if st.button('예측'):
-    predicted_mau = predict_mau(current_date, login_customers, login_customers_mom,
-                                unique_visitors, unique_visitors_mom,
-                                mau, mau_mom, prev_month_data)
-    st.success(f'예상 월말 MAU: {predicted_mau:,.0f}')
+# 사이드바: 날짜 선택
+selected_date = st.sidebar.date_input("날짜 선택", df['date'].max())
 
-# 그래프 표시
-st.subheader('전월 MAU 추이')
-st.line_chart(prev_month_data.set_index('date')['MAU'])
+# 이미지 업로드 섹션
+st.subheader("최신 MAU 데이터 업로드")
+uploaded_file = st.file_uploader("MAU 데이터 이미지 업로드", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="업로드된 이미지", use_column_width=True)
+    
+    if st.button("데이터 추출"):
+        extracted_text = extract_text_from_image(image)
+        st.text("추출된 텍스트:")
+        st.text(extracted_text)
+        
+        # 여기에 추출된 텍스트를 파싱하고 데이터를 업데이트하는 로직을 추가합니다.
+        # parsed_data = parse_mau_data(extracted_text)
+        # update_mau_data(parsed_data)
+        
+        st.success("데이터가 성공적으로 추출되었습니다.")
+
+# 카메라로 촬영
+if st.button("카메라로 촬영"):
+    picture = st.camera_input("MAU 데이터 촬영")
+    
+    if picture:
+        st.image(picture, caption="촬영된 이미지", use_column_width=True)
+        
+        if st.button("촬영 이미지에서 데이터 추출"):
+            image = Image.open(picture)
+            extracted_text = extract_text_from_image(image)
+            st.text("추출된 텍스트:")
+            st.text(extracted_text)
+            
+            # 여기에 추출된 텍스트를 파싱하고 데이터를 업데이트하는 로직을 추가합니다.
+            # parsed_data = parse_mau_data(extracted_text)
+            # update_mau_data(parsed_data)
+            
+            st.success("데이터가 성공적으로 추출되었습니다.")
+
+# (기존의 대시보드 코드는 여기에 계속됩니다...)
