@@ -74,12 +74,12 @@ nbformat==5.10.4
 nest-asyncio==1.6.0
 networkx==3.3
 notebook-shim==0.2.4
-numpy==1.23.0  # 호환성을 위해 낮춘 버전
+numpy==1.23.5  # opencv-python-headless와 호환되는 버전
 opencv-python-headless==4.10.0.84
 openpyxl==3.1.5
 overrides==7.7.0
 packaging==24.1
-pandas==1.5.3  # numpy와 호환되는 버전
+pandas==1.5.3
 pandocfilters==1.5.1
 parso==0.8.4
 pexpect==4.9.0
@@ -88,7 +88,7 @@ platformdirs==4.2.2
 plotly==5.22.0
 prometheus-client==0.20.0
 prompt-toolkit==3.0.47
-protobuf==3.20.3  # Streamlit과 호환되는 버전
+protobuf==3.20.3
 psutil==6.0.0
 ptyprocess==0.7.0
 pure-eval==0.2.2
