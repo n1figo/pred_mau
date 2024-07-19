@@ -88,15 +88,35 @@ with left_column:
         st.write(f"머신러닝 모델: {predictions['machine_learning']:,.0f}")
 
 with right_column:
-    st.subheader("MAU 추세")
+    st.subheader("MAU 추세 및 예측")
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df['date'], y=df['mau'], mode='lines+markers', name='실제 MAU'))
-    
-    fig.update_layout(title='MAU 추세',
+
+    # 실제 데이터 (파란색 선)
+    fig.add_trace(go.Scatter(x=df['date'], y=df['mau'], mode='lines+markers', name='실제 MAU', line=dict(color='blue')))
+
+    # 예측 데이터 준비
+    if 'predictions' in locals():
+        last_date = df['date'].max()
+        future_dates = [last_date + timedelta(days=30*i) for i in range(1, 4)]  # 3개월 예측
+        
+        # 숫자 기반 모델 예측 (빨간색 점선)
+        fig.add_trace(go.Scatter(x=future_dates, y=[df['mau'].iloc[-1]] + [predictions['numeric']] * 2, 
+                                 mode='lines', name='숫자 기반 예측', line=dict(color='red', dash='dash')))
+        
+        # 회귀 모델 예측 (주황색 점선)
+        fig.add_trace(go.Scatter(x=future_dates, y=[df['mau'].iloc[-1]] + [predictions['regression']] * 2, 
+                                 mode='lines', name='회귀 모델 예측', line=dict(color='orange', dash='dash')))
+        
+        # 머신러닝 모델 예측 (초록색 점선)
+        fig.add_trace(go.Scatter(x=future_dates, y=[df['mau'].iloc[-1]] + [predictions['machine_learning']] * 2, 
+                                 mode='lines', name='머신러닝 모델 예측', line=dict(color='green', dash='dash')))
+
+    fig.update_layout(title='MAU 추세 및 예측',
                       xaxis_title='날짜',
                       yaxis_title='MAU',
-                      height=400)
+                      height=500,
+                      legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
     
     st.plotly_chart(fig, use_container_width=True)
 
