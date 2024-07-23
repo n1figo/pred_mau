@@ -48,11 +48,21 @@ def predict_mau(mau, login_customers, unique_visitors, mau_mom, df):
 # 최근 연월 데이터 표시 함수
 def show_recent_data(data):
     st.subheader("이번달 연월 데이터")
-    recent_data = data.sort_values('date', ascending=True).head(12)  # 최근 12개월 데이터
-    recent_data['년월'] = recent_data['date'].dt.strftime('%Y-%m-%d')
-    recent_data_display = recent_data[['년월', 'mau', 'login_customers', 'unique_visitors']]
-    recent_data_display.columns = ['년월', 'MAU', '로그인 고객수', '방문자 고유 ID']
-    st.table(recent_data_display)
+    
+    # 이번 달의 1일 계산
+    today = datetime.now()
+    first_day_of_month = today.replace(day=1)
+    
+    # 이번 달 1일 이후의 데이터만 필터링
+    this_month_data = data[data['date'] >= first_day_of_month].sort_values('date', ascending=True)
+    
+    if this_month_data.empty:
+        st.write("이번 달의 데이터가 아직 없습니다.")
+    else:
+        this_month_data['년월일'] = this_month_data['date'].dt.strftime('%Y-%m-%d')
+        display_data = this_month_data[['년월일', 'mau', 'login_customers', 'unique_visitors']]
+        display_data.columns = ['년월일', 'MAU', '로그인 고객수', '방문자 고유 ID']
+        st.table(display_data)
 
 # 페이지 설정
 st.set_page_config(page_title="MAU 예측 대시보드", layout="wide")
