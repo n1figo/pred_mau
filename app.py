@@ -129,3 +129,31 @@ st.info("""
 1. 숫자 기반 모델: 현재 MAU와 고정 성장률을 기반으로 한 단순 예측
 2. 회귀 모델: 과거 데이터를 사용한 선형 회귀 예측
 3. 머신러닝 모델: 다항 회귀를 사용한 예측 (실제 환경에서는 더 복잡한 모델로 대체 가능)
+
+실제 결과는 다양한 외부 요인에 따라 달라질 수 있습니다.
+""")
+
+# 일별 MAU 데이터 표시 및 수기 입력 (최하단으로 이동)
+st.subheader("일별 MAU 데이터")
+
+# 데이터 편집을 위한 데이터프레임 생성
+editable_df = df[['date', 'mau', 'login_customers', 'unique_visitors']].copy()
+editable_df['date'] = editable_df['date'].dt.date  # datetime을 date로 변환
+
+# 데이터 표시 및 편집
+st.write("일별 데이터를 수정하려면 아래 필드를 직접 클릭하여 수정하세요.")
+for index, row in editable_df.iterrows():
+    cols = st.columns(4)
+    with cols[0]:
+        st.write(row['date'])
+    with cols[1]:
+        new_mau = st.number_input(f"MAU {row['date']}", value=int(row['mau']), key=f"mau_{index}", step=0)
+    with cols[2]:
+        new_login = st.number_input(f"로그인 고객수 {row['date']}", value=int(row['login_customers']), key=f"login_{index}", step=0)
+    with cols[3]:
+        new_visitors = st.number_input(f"방문자 고유 ID {row['date']}", value=int(row['unique_visitors']), key=f"visitors_{index}", step=0)
+    
+    # 데이터 업데이트
+    df.loc[index, 'mau'] = new_mau
+    df.loc[index, 'login_customers'] = new_login
+    df.loc[index, 'unique_visitors'] = new_visitors
