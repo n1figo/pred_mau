@@ -48,6 +48,22 @@ def predict_mau(mau, login_customers, unique_visitors, mau_mom, df):
 # 페이지 설정
 st.set_page_config(page_title="MAU 예측 대시보드", layout="wide")
 
+# CSS를 사용하여 입력 필드의 스타일 조정
+st.markdown("""
+<style>
+    .stNumberInput input {
+        -webkit-appearance: none !important;
+        -moz-appearance: textfield !important;
+        appearance: textfield !important;
+    }
+    .stNumberInput input::-webkit-outer-spin-button,
+    .stNumberInput input::-webkit-inner-spin-button {
+        -webkit-appearance: none !important;
+        margin: 0 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # 제목
 st.title("MAU 예측 대시보드")
 
@@ -77,94 +93,106 @@ if uploaded_file is not None:
         # TODO: 추출된 텍스트를 파싱하고 데이터를 업데이트하는 로직 추가
         st.success("데이터가 성공적으로 추출되었습니다.")
 
-# 메인 섹션을 두 컬럼으로 나눕니다
-left_column, right_column = st.columns(2)
+# 선택된 날짜의 데이터 가져오기
+selected_data = df[df['date'] == pd.to_datetime(selected_date)]
 
-with left_column:
-    st.subheader("현재 데이터 입력")
-    current_data = df[df['date'] == pd.to_datetime(selected_date)].iloc[0]
-    login_customers = st.number_input("로그인 고객수 (누적)", min_value=0, value=int(current_data['login_customers']), format="%d", step=0)
-    unique_visitors = st.number_input("방문자 고유 ID (누적)", min_value=0, value=int(current_data['unique_visitors']), format="%d", step=0)
-    mau = st.number_input("MAU (누적)", min_value=0, value=int(current_data['mau']), format="%d", step=0)
-    mau_mom = st.number_input("MAU 전월비", min_value=0.0, value=float(df['mau'].pct_change().iloc[-1]), format="%f", step=0.0)
-
-    # 예측 실행
-    predictions = predict_mau(mau, login_customers, unique_visitors, mau_mom, df)
+if not selected_data.empty:
+    current_data = selected_data.iloc[0]
     
-    st.success(f"예측된 월말 MAU:")
-    st.write(f"숫자 기반 모델: {predictions['numeric']:,.0f}")
-    st.write(f"회귀 모델: {predictions['regression']:,.0f}")
-    st.write(f"머신러닝 모델: {predictions['machine_learning']:,.0f}")
+    # 메인 섹션을 두 컬럼으로 나눕니다
+    left_column, right_column = st.columns(2)
 
-with right_column:
-    st.subheader("MAU 추세 및 예측")
-    
-    fig = go.Figure()
+    with left_column:
+        st.subheader("현재 데이터 입력")
+        login_customers = st.number_input("로그인 고객수 (누적)", min_value=0, value=int(current_data['login_customers']), format="%d")
+        unique_visitors = st.number_input("방문자 고유 ID (누적)", min_value=0, value=int(current_data['unique_visitors']), format="%d")
+        mau = st.number_input("MAU (누적)", min_value=0, value=int(current_data['mau']), format="%d")
+        mau_mom = st.number_input("MAU 전월비", min_value=0.0, value=float(df['mau'].pct_change().iloc[-1]), format="%f")
 
-    # 실제 데이터 (파란색 선)
-    fig.add_trace(go.Scatter(x=df['date'], y=df['mau'], mode='lines+markers', name='실제 MAU', line=dict(color='blue')))
+        # 예측 실행
+        predictions = predict_mau(mau, login_customers, unique_visitors, mau_mom, df)
+        
+        st.success(f"예측된 월말 MAU:")
+        st.write(f"숫자 기반 모델: {predictions['numeric']:,.0f}")
+        st.write(f"회귀 모델: {predictions['regression']:,.0f}")
+        st.write(f"머신러닝 모델: {predictions['machine_learning']:,.0f}")
 
-    # 예측 데이터 준비
-    last_date = df['date'].max()
-    future_dates = [last_date + timedelta(days=30*i) for i in range(1, 4)]  # 3개월 예측
-    
-    # 예측 모델별 선 그리기
-    for model, color in zip(['numeric', 'regression', 'machine_learning'], ['red', 'orange', 'green']):
-        fig.add_trace(go.Scatter(x=future_dates, y=[df['mau'].iloc[-1]] + [predictions[model]] * 2, 
-                                 mode='lines', name=f'{model} 예측', line=dict(color=color, dash='dash')))
+    with right_column:
+        st.subheader("MAU 추세 및 예측")
+        
+        fig = go.Figure()
 
-    fig.update_layout(title='MAU 추세 및 예측',
-                      xaxis_title='날짜',
-                      yaxis_title='MAU',
-                      height=500,
-                      legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
-    
-    st.plotly_chart(fig, use_container_width=True)
+        # 실제 데이터 (파란색 선)
+        fig.add_trace(go.Scatter(x=df['date'], y=df['mau'], mode='lines+markers', name='실제 MAU', line=dict(color='blue')))
 
-# 추가 정보 섹션
-st.subheader("추가 정보")
-st.info("""
-이 대시보드는 현재 입력된 데이터를 기반으로 월말 MAU를 예측합니다.
-3가지 예측 모델을 사용합니다:
-1. 숫자 기반 모델: 현재 MAU와 고정 성장률을 기반으로 한 단순 예측
-2. 회귀 모델: 과거 데이터를 사용한 선형 회귀 예측
-3. 머신러닝 모델: 다항 회귀를 사용한 예측 (실제 환경에서는 더 복잡한 모델로 대체 가능)
+        # 예측 데이터 준비
+        last_date = df['date'].max()
+        future_dates = [last_date + timedelta(days=30*i) for i in range(1, 4)]  # 3개월 예측
+        
+        # 예측 모델별 선 그리기
+        for model, color in zip(['numeric', 'regression', 'machine_learning'], ['red', 'orange', 'green']):
+            fig.add_trace(go.Scatter(x=future_dates, y=[df['mau'].iloc[-1]] + [predictions[model]] * 2, 
+                                     mode='lines', name=f'{model} 예측', line=dict(color=color, dash='dash')))
 
-실제 결과는 다양한 외부 요인에 따라 달라질 수 있습니다.
-""")
+        fig.update_layout(title='MAU 추세 및 예측',
+                          xaxis_title='날짜',
+                          yaxis_title='MAU',
+                          height=500,
+                          legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+    # 추가 정보 섹션
+    st.subheader("추가 정보")
+    st.info("""
+    이 대시보드는 현재 입력된 데이터를 기반으로 월말 MAU를 예측합니다.
+    3가지 예측 모델을 사용합니다:
+    1. 숫자 기반 모델: 현재 MAU와 고정 성장률을 기반으로 한 단순 예측
+    2. 회귀 모델: 과거 데이터를 사용한 선형 회귀 예측
+    3. 머신러닝 모델: 다항 회귀를 사용한 예측 (실제 환경에서는 더 복잡한 모델로 대체 가능)
+
+    실제 결과는 다양한 외부 요인에 따라 달라질 수 있습니다.
+    """)
 
 # 일별 MAU 데이터 표시 및 수기 입력 (최하단으로 이동)
 st.subheader("일별 MAU 데이터")
 
-# 데이터 편집을 위한 데이터프레임 생성
-editable_df = df[['date', 'mau', 'login_customers', 'unique_visitors']].copy()
-editable_df['date'] = editable_df['date'].dt.date  # datetime을 date로 변환
+# 선택된 날짜의 데이터 표시 또는 새 데이터 입력
+st.write(f"선택된 날짜: {selected_date}")
+cols = st.columns(4)
+with cols[0]:
+    st.write("날짜")
+    st.write(selected_date)
+with cols[1]:
+    new_mau = st.number_input("MAU", value=int(current_data['mau']) if not selected_data.empty else 0, key="mau_edit", format="%d")
+with cols[2]:
+    new_login = st.number_input("로그인 고객수", value=int(current_data['login_customers']) if not selected_data.empty else 0, key="login_edit", format="%d")
+with cols[3]:
+    new_visitors = st.number_input("방문자 고유 ID", value=int(current_data['unique_visitors']) if not selected_data.empty else 0, key="visitors_edit", format="%d")
 
-# CSS를 사용하여 입력 필드의 스타일 조정
-st.markdown("""
-<style>
-    .stNumberInput input {
-        -webkit-appearance: none;
-        margin: 0;
-        -moz-appearance: textfield;
-    }
-</style>
-""", unsafe_allow_html=True)
+if st.button("데이터 저장/수정"):
+    if selected_data.empty:
+        # 새 데이터 추가
+        new_data = pd.DataFrame({
+            'date': [pd.to_datetime(selected_date)],
+            'mau': [new_mau],
+            'login_customers': [new_login],
+            'unique_visitors': [new_visitors]
+        })
+        df = pd.concat([df, new_data], ignore_index=True)
+        df = df.sort_values('date').reset_index(drop=True)
+        st.success("새 데이터가 추가되었습니다.")
+    else:
+        # 기존 데이터 수정
+        df.loc[df['date'] == pd.to_datetime(selected_date), 'mau'] = new_mau
+        df.loc[df['date'] == pd.to_datetime(selected_date), 'login_customers'] = new_login
+        df.loc[df['date'] == pd.to_datetime(selected_date), 'unique_visitors'] = new_visitors
+        st.success("데이터가 수정되었습니다.")
 
-# 데이터 표시 및 편집
-st.write("일별 데이터를 수정하려면 아래 필드를 직접 클릭하여 수정하세요.")
-for index, row in editable_df.iterrows():
-    cols = st.columns(4)
-    with cols[0]:
-        st.write(row['date'])
-    with cols[1]:
-        new_mau = st.number_input(f"MAU {row['date']}", value=int(row['mau']), key=f"mau_{index}", step=0, format="%d")
-    with cols[2]:
-        new_login = st.number_input(f"로그인 고객수 {row['date']}", value=int(row['login_customers']), key=f"login_{index}", step=0, format="%d")
-    with cols[3]:
-        new_visitors = st.number_input(f"방문자 고유 ID {row['date']}", value=int(row['unique_visitors']), key=f"visitors_{index}", step=0, format="%d")
-    
-    # 데이터 업데이트
-    df.loc[index, 'mau'] = new_mau
-    df.loc[index, 'login_customers'] = new_login
-    df.loc[index, 'unique_visitors'] = new_visitors
+    # 데이터 저장
+    df.to_excel('data/mau_data_updated.xlsx', index=False)
+    st.success("데이터가 성공적으로 저장되었습니다.")
+
+# 전체 데이터 표시
+if st.checkbox("전체 데이터 보기"):
+    st.write(df)
