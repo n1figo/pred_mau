@@ -61,7 +61,7 @@ def show_recent_data(data):
     else:
         this_month_data['년월일'] = this_month_data['date'].dt.strftime('%Y-%m-%d')
         display_data = this_month_data[['년월일', 'mau', 'login_customers', 'unique_visitors']]
-        display_data.columns = ['년월일', 'MAU', '로그인 고객수', '방문자 고유 ID']
+        display_data.columns = ['년월일', '로그인 고객수', '방문자 고유 ID', 'MAU']
         st.table(display_data)
 
 # 페이지 설정
