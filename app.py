@@ -77,40 +77,16 @@ if uploaded_file is not None:
         # TODO: 추출된 텍스트를 파싱하고 데이터를 업데이트하는 로직 추가
         st.success("데이터가 성공적으로 추출되었습니다.")
 
-# 일별 MAU 데이터 표시 및 수기 입력
-st.subheader("일별 MAU 데이터")
-
-# 데이터 편집을 위한 데이터프레임 생성
-editable_df = df[['date', 'mau', 'login_customers', 'unique_visitors']].copy()
-editable_df['date'] = editable_df['date'].dt.date  # datetime을 date로 변환
-
-# 데이터 표시 및 편집
-for index, row in editable_df.iterrows():
-    cols = st.columns(4)
-    with cols[0]:
-        st.write(row['date'])
-    with cols[1]:
-        new_mau = st.number_input(f"MAU {row['date']}", value=int(row['mau']), key=f"mau_{index}")
-    with cols[2]:
-        new_login = st.number_input(f"로그인 고객수 {row['date']}", value=int(row['login_customers']), key=f"login_{index}")
-    with cols[3]:
-        new_visitors = st.number_input(f"방문자 고유 ID {row['date']}", value=int(row['unique_visitors']), key=f"visitors_{index}")
-    
-    # 데이터 업데이트
-    df.loc[index, 'mau'] = new_mau
-    df.loc[index, 'login_customers'] = new_login
-    df.loc[index, 'unique_visitors'] = new_visitors
-
 # 메인 섹션을 두 컬럼으로 나눕니다
 left_column, right_column = st.columns(2)
 
 with left_column:
     st.subheader("현재 데이터 입력")
     current_data = df[df['date'] == pd.to_datetime(selected_date)].iloc[0]
-    login_customers = st.number_input("로그인 고객수 (누적)", min_value=0, value=int(current_data['login_customers']), format="%d")
-    unique_visitors = st.number_input("방문자 고유 ID (누적)", min_value=0, value=int(current_data['unique_visitors']), format="%d")
-    mau = st.number_input("MAU (누적)", min_value=0, value=int(current_data['mau']), format="%d")
-    mau_mom = st.number_input("MAU 전월비", min_value=0.0, value=float(df['mau'].pct_change().iloc[-1]), format="%f")
+    login_customers = st.number_input("로그인 고객수 (누적)", min_value=0, value=int(current_data['login_customers']), format="%d", step=0)
+    unique_visitors = st.number_input("방문자 고유 ID (누적)", min_value=0, value=int(current_data['unique_visitors']), format="%d", step=0)
+    mau = st.number_input("MAU (누적)", min_value=0, value=int(current_data['mau']), format="%d", step=0)
+    mau_mom = st.number_input("MAU 전월비", min_value=0.0, value=float(df['mau'].pct_change().iloc[-1]), format="%f", step=0.0)
 
     # 예측 실행
     predictions = predict_mau(mau, login_customers, unique_visitors, mau_mom, df)
@@ -153,6 +129,3 @@ st.info("""
 1. 숫자 기반 모델: 현재 MAU와 고정 성장률을 기반으로 한 단순 예측
 2. 회귀 모델: 과거 데이터를 사용한 선형 회귀 예측
 3. 머신러닝 모델: 다항 회귀를 사용한 예측 (실제 환경에서는 더 복잡한 모델로 대체 가능)
-
-실제 결과는 다양한 외부 요인에 따라 달라질 수 있습니다.
-""")
