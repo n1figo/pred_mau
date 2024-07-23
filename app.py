@@ -60,7 +60,7 @@ def show_recent_data(data):
         st.write("이번 달의 데이터가 아직 없습니다.")
     else:
         this_month_data['년월일'] = this_month_data['date'].dt.strftime('%Y-%m-%d')
-        display_data = this_month_data[['년월일', 'mau', 'login_customers', 'unique_visitors']]
+        display_data = this_month_data[['년월일', 'login_customers', 'unique_visitors','mau']]
         display_data.columns = ['년월일', '로그인 고객수', '방문자 고유 ID', 'MAU']
         st.table(display_data)
 
