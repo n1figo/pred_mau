@@ -84,23 +84,22 @@ st.subheader("일별 MAU 데이터")
 editable_df = df[['date', 'mau', 'login_customers', 'unique_visitors']].copy()
 editable_df['date'] = editable_df['date'].dt.date  # datetime을 date로 변환
 
-# 데이터 편집 기능
-edited_df = st.data_editor(
-    editable_df,
-    column_config={
-        "date": st.column_config.DateColumn("Date", disabled=True),
-        "mau": st.column_config.NumberColumn("MAU"),
-        "login_customers": st.column_config.NumberColumn("로그인 고객수"),
-        "unique_visitors": st.column_config.NumberColumn("방문자 고유 ID"),
-    },
-    use_container_width=True,
-    num_rows="dynamic"
-)
-
-# 변경된 데이터 처리
-if not edited_df.equals(editable_df):
-    df.update(edited_df)
-    st.success("데이터가 업데이트되었습니다.")
+# 데이터 표시 및 편집
+for index, row in editable_df.iterrows():
+    cols = st.columns(4)
+    with cols[0]:
+        st.write(row['date'])
+    with cols[1]:
+        new_mau = st.number_input(f"MAU {row['date']}", value=int(row['mau']), key=f"mau_{index}")
+    with cols[2]:
+        new_login = st.number_input(f"로그인 고객수 {row['date']}", value=int(row['login_customers']), key=f"login_{index}")
+    with cols[3]:
+        new_visitors = st.number_input(f"방문자 고유 ID {row['date']}", value=int(row['unique_visitors']), key=f"visitors_{index}")
+    
+    # 데이터 업데이트
+    df.loc[index, 'mau'] = new_mau
+    df.loc[index, 'login_customers'] = new_login
+    df.loc[index, 'unique_visitors'] = new_visitors
 
 # 메인 섹션을 두 컬럼으로 나눕니다
 left_column, right_column = st.columns(2)
