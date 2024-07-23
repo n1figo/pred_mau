@@ -45,6 +45,15 @@ def predict_mau(mau, login_customers, unique_visitors, mau_mom, df):
     }
     return get_predictions(mau, historical_data, features)
 
+# 최근 연월 데이터 표시 함수
+def show_recent_data(data):
+    st.subheader("최근 연월 데이터")
+    recent_data = data.sort_values('date', ascending=False).head(12)  # 최근 12개월 데이터
+    recent_data['년월'] = recent_data['date'].dt.strftime('%Y-%m')
+    recent_data_display = recent_data[['년월', 'mau', 'login_customers', 'unique_visitors']]
+    recent_data_display.columns = ['년월', 'MAU', '로그인 고객수', '방문자 고유 ID']
+    st.table(recent_data_display)
+
 # 페이지 설정
 st.set_page_config(page_title="MAU 예측 대시보드", layout="wide")
 
@@ -69,6 +78,9 @@ st.title("MAU 예측 대시보드")
 
 # 데이터 로드
 df = load_data()
+
+# 최근 연월 데이터 표시
+show_recent_data(df)
 
 # 사이드바: 날짜 선택
 selected_date = st.sidebar.date_input("날짜 선택", df['date'].max())
@@ -142,19 +154,19 @@ if not selected_data.empty:
         
         st.plotly_chart(fig, use_container_width=True)
 
-    # 추가 정보 섹션
-    st.subheader("추가 정보")
-    st.info("""
-    이 대시보드는 현재 입력된 데이터를 기반으로 월말 MAU를 예측합니다.
-    3가지 예측 모델을 사용합니다:
-    1. 숫자 기반 모델: 현재 MAU와 고정 성장률을 기반으로 한 단순 예측
-    2. 회귀 모델: 과거 데이터를 사용한 선형 회귀 예측
-    3. 머신러닝 모델: 다항 회귀를 사용한 예측 (실제 환경에서는 더 복잡한 모델로 대체 가능)
+# 추가 정보 섹션
+st.subheader("추가 정보")
+st.info("""
+이 대시보드는 현재 입력된 데이터를 기반으로 월말 MAU를 예측합니다.
+3가지 예측 모델을 사용합니다:
+1. 숫자 기반 모델: 현재 MAU와 고정 성장률을 기반으로 한 단순 예측
+2. 회귀 모델: 과거 데이터를 사용한 선형 회귀 예측
+3. 머신러닝 모델: 다항 회귀를 사용한 예측 (실제 환경에서는 더 복잡한 모델로 대체 가능)
 
-    실제 결과는 다양한 외부 요인에 따라 달라질 수 있습니다.
-    """)
+실제 결과는 다양한 외부 요인에 따라 달라질 수 있습니다.
+""")
 
-# 일별 MAU 데이터 표시 및 수기 입력 (최하단으로 이동)
+# 일별 MAU 데이터 표시 및 수기 입력
 st.subheader("일별 MAU 데이터")
 
 # 선택된 날짜의 데이터 표시 또는 새 데이터 입력
@@ -192,6 +204,9 @@ if st.button("데이터 저장/수정"):
     # 데이터 저장
     df.to_excel('data/mau_data_updated.xlsx', index=False)
     st.success("데이터가 성공적으로 저장되었습니다.")
+
+    # 최근 연월 데이터 표 업데이트
+    show_recent_data(df)
 
 # 전체 데이터 표시
 if st.checkbox("전체 데이터 보기"):
