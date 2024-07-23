@@ -47,7 +47,7 @@ def predict_mau(mau, login_customers, unique_visitors, mau_mom, df):
 
 # 최근 연월 데이터 표시 함수
 def show_recent_data(data):
-    st.subheader("최근 연월 데이터")
+    st.subheader("이번달 연월 데이터")
     recent_data = data.sort_values('date', ascending=True).head(12)  # 최근 12개월 데이터
     recent_data['년월'] = recent_data['date'].dt.strftime('%Y-%m-%d')
     recent_data_display = recent_data[['년월', 'mau', 'login_customers', 'unique_visitors']]
